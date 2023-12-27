@@ -1,0 +1,288 @@
+{% extends "core/base.html" %}
+{% block content %}
+
+<!-- Page Header-->
+<header class="masthead" style="background-image: url('{{ post.picture.url }}')">
+    <div class="container position-relative px-4 px-lg-5">
+        <div class="row gx-4 gx-lg-5 justify-content-center">
+            <div class="col-md-10 col-lg-8 col-xl-7">
+                <div class="post-heading">
+                    <h1>{{ object.title }}</h1>
+                    <h2 class="subheading">{{ object.description }}</h2>
+                    <span class="meta">
+                        Posted by
+                        <a href="#!">MM.</a>
+                        {{ object.created_at|date:"F d, Y"}}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+<!-- Post Content-->
+<article class="mb-4">
+    <div class="container px-4 px-lg-5">
+        <div class="row gx-4 gx-lg-5 justify-content-center">
+            <div class="col-md-10 col-lg-8 col-xl-7">
+                {{ object.content|safe }}
+
+
+
+
+
+                
+            <!-- ======= Comments ======= -->
+            <div class="comments">
+                {% if not post.comments.all %}
+
+                {% else %}
+                <h5 class="comment-title py-4">{{ post.comment.count }} Comments</h5>
+                {% for comment in post.comments.all %}
+                <div class="comment d-flex mb-4">
+                  <div class="flex-shrink-0">
+                    <div class="avatar avatar-sm rounded-circle">
+                      <img class="avatar-img" src="{{ post.created_by.profile.image.url }}" alt="" class="img-fluid">
+                    </div>
+                  </div>
+                  <div class="flex-grow-1 ms-2 ms-sm-3">
+                    <div class="comment-meta d-flex align-items-baseline">
+                      <h6 class="me-2 text-capitalize">{{ comment.created_by }}</h6>
+                      <span class="text-muted">{{ comment.created_at|date:"F d, Y" }}</span>
+                    </div>
+                    <div class="comment-body">
+                      {{ comment.content|safe }}
+                    </div>
+
+                  </div>
+                </div>
+                {% endfor %}
+	            	{% endif %}
+
+                {% if not post.unloggedComments.all %}
+
+                {% else %}
+                  {% if not post.comments.all %}
+                  <h5 class="comment-title py-4">{{ post.comment.count }} Comments</h5>
+                  {% endif %}
+                {% for unloggedcomment in post.unloggedComments.all %}
+                <div class="comment d-flex mb-4">
+                  <div class="flex-shrink-0">
+                    <div class="avatar avatar-sm rounded-circle">
+                      <img class="avatar-img" src="{{ post.created_by.profile.image.url }}" alt="" class="img-fluid">
+                    </div>
+                  </div>
+                  <div class="flex-grow-1 ms-2 ms-sm-3">
+                    <div class="comment-meta d-flex align-items-baseline">
+                      <h6 class="me-2 text-capitalize">{{ unloggedcomment.name }}</h6>
+                      <span class="text-muted">{{ unloggedcomment.created_at|date:"F d, Y" }}</span>
+                    </div>
+                    <div class="comment-body">
+                      {{ unloggedcomment.content|safe }}
+                    </div>
+
+                  </div>
+                </div>
+                {% endfor %}
+	            	{% endif %}
+              </div><!-- End Comments -->
+
+            
+  
+              {%if user.is_authenticated %}
+              <!-- ======= Comments Form ======= -->
+              <!-- For logged in users -->
+              {% csrf_token %}
+
+              <div class="row justify-content-center mt-5">
+  
+                <div class="col-lg-12">
+                  <h5 class="comment-title mb-3">Leave a Comment</h5>
+                  <div class="row">
+                    <div class="col-12 mb-3">
+  
+                      <textarea class="form-control comment-text" id="comment-message" placeholder="Enter your comment" cols="30" rows="10"></textarea>
+                    </div>
+                    <div class="col-12">
+                      <button type="button" class="btn btn-primary save-comment" data-post="{{post.id}}" value="Post comment">Submit</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {% else %}
+              <div class="row justify-content-center mt-5">
+  
+                <div class="col-lg-12">
+                  <h5 class="comment-title">Leave a Comment</h5>
+                  <div class="row">
+                    <div class="col-lg-6 mb-3">
+                      <label for="comment-name">Name</label>
+                      <input type="text" class="form-control comment-name" id="comment-name" placeholder="Enter your name">
+                    </div>
+                    <div class="col-lg-6 mb-3">
+                      <label for="comment-email">Email</label>
+                      <input type="text" class="form-control comment-email" id="comment-email" placeholder="Enter your email">
+                    </div>
+                    <div class="col-12 mb-3">
+                      <label for="comment-message">Message</label>
+  
+                      <textarea class="form-control unlogged-comment-text" id="comment-message" placeholder="Enter your comment" cols="30" rows="10"></textarea>
+                    </div>
+                    <div class="col-12">
+                      <input type="submit" class="btn btn-primary save-unlogged-comment" data-post="{{post.id}}" value="Post comment">
+                    </div>
+                  </div>
+                </div>
+              </div><!-- End Comments Form -->
+              {% endif %}
+  
+
+
+
+
+
+            </div>
+
+
+
+            
+
+
+
+        </div>
+    </div>
+</article>
+
+
+
+{% endblock content %}
+
+{% block script %}
+<script>
+	$(document).ready(function(){
+	
+
+		// This is for the post comments for logged in users
+		$(".save-comment").on('click',function(){
+			var _postComment=$(".comment-text").val();
+			var _postid=$(this).data('post');
+			// Ajax	
+			$.ajax({
+				url:"/save-comment",
+				type:"post",
+				data:{
+					content:_postComment,
+					postid:_postid,
+					csrfmiddlewaretoken:"{{csrf_token}}"
+				},
+				dataType:'json',
+				beforeSend:function(){
+					$(".save-comment").addClass('disabled').text('Saving...');
+				},
+				success:function(res){
+					if(res.bool==true){
+						$(".comment-text").val('');
+						var _html='\
+            <div class="comment d-flex mb-4">\
+              <div class="flex-shrink-0">\
+                <div class="avatar avatar-sm rounded-circle">\
+                <img class="avatar-img" src="{{ post.created_by.profile.image.url }}" alt="" class="img-fluid">\
+                </div>\
+              </div>\
+              <div class="flex-grow-1 ms-2 ms-sm-3">\
+                <div class="comment-meta d-flex align-items-baseline">\
+                <h6 class="me-2 text-capitalize">{{ request.user }}</h6>\
+                <span class="text-muted">Just now</span>\
+                </div>\
+                <div class="comment-body">\
+                '+_postComment+'\
+                </div>\
+              </div>\
+              </div>\
+						';
+						$(".comments").append(_html);
+					}
+					$(".save-comment").removeClass('disabled').text('submit');
+				}
+			});		
+		});
+
+    // This is for the post comments for non-logged in users
+		$(".save-unlogged-comment").on('click',function(){
+			var _postComment=$(".unlogged-comment-text").val();
+      var _postCommentName=$(".comment-name").val();
+      var _postCommentEmail=$(".comment-email").val();
+			var _postid=$(this).data('post');
+			// Ajax	
+			$.ajax({
+				url:"/save-unlogged-comment",
+				type:"post",
+				data:{
+					content:_postComment,
+					postid:_postid,
+          name:_postCommentName,
+          email:_postCommentEmail,
+					csrfmiddlewaretoken:"{{csrf_token}}"
+				},
+				dataType:'json',
+				beforeSend:function(){
+					$(".save-unlogged-comment").addClass('disabled').text('Saving...');
+				},
+				success:function(res){
+					if(res.bool==true){
+						$(".unlogged-comment-text").val('');
+            $(".comment-name").val('');
+            $(".comment-email").val('');
+						var _html='\
+            <div class="comment d-flex mb-4">\
+              <div class="flex-shrink-0">\
+                <div class="avatar avatar-sm rounded-circle">\
+                <img class="avatar-img" src="{{ post.created_by.profile.image.url }}" alt="" class="img-fluid">\
+                </div>\
+              </div>\
+              <div class="flex-grow-1 ms-2 ms-sm-3">\
+                <div class="comment-meta d-flex align-items-baseline">\
+                <h6 class="me-2 text-capitalize">'+_postCommentName+'</h6>\
+                <span class="text-muted">Just now</span>\
+                </div>\
+                <div class="comment-body">\
+                '+_postComment+'\
+                </div>\
+              </div>\
+              </div>\
+						';
+						$(".comments").append(_html);
+					}
+					$(".save-unlogged-comment").removeClass('disabled').text('submit');
+				}
+			});		
+		});
+
+		// Up vote section functionality
+
+		//upvote for post
+		$(".upvote-click").on('click',function(){
+			var postid=$(this).data('post');
+			// Ajax
+			$.ajax({
+				url:"/save-upvote",
+				type:"post",
+				data:{
+					postid:postid,
+					csrfmiddlewaretoken:"{{csrf_token}}"
+				},
+				dataType:'json',
+				success:function(res){
+					var _prevupvote=$(".upvote-count-" + postid).text();
+					if(res.bool==true){
+						$("upvote-count-" + postid).text(parseInt(_prevupvote)+1);
+					}
+				},
+			});
+		});
+
+  });
+
+
+</script>
+{% endblock %}
